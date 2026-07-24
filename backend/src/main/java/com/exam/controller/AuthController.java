@@ -90,8 +90,8 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Account registered successfully. Please sign in."));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
+   @PostMapping("/login")
+public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) { ... } {
         String email = request.get("email");
         String password = request.get("password");
 
