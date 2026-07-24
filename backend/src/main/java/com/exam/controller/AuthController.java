@@ -31,7 +31,6 @@ public class AuthController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    // In-memory or temporary storage map for signup OTPs
     private final Map<String, String> otpStorage = new HashMap<>();
 
     @PostMapping("/send-email-otp")
@@ -42,12 +41,9 @@ public class AuthController {
         }
 
         String formattedEmail = email.trim().toLowerCase();
-
-        // Generate a random 6-digit OTP
         String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
         otpStorage.put(formattedEmail, otp);
 
-        // Dispatch email using the reliable sendEmail method
         String subject = "Account Registration Verification Code";
         String body = "Your One-Time Password (OTP) for account registration is: " + otp + "\n\nThis code will expire in 5 minutes.";
         
@@ -106,9 +102,8 @@ public class AuthController {
 
             User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
             
-            // Return token or session success response mapping
             Map<String, Object> response = new HashMap<>();
-            response.append("message", "Login successful");
+            response.put("message", "Login successful");
             response.put("email", user.getEmail());
             response.put("role", user.getRole().name());
             response.put("name", user.getName());
