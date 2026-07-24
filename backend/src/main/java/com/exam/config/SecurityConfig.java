@@ -33,20 +33,20 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
-                .requestMatchers(
+                // Explicitly permit POST requests for public authentication and recovery routes
+                .requestMatchers(HttpMethod.POST, 
                     "/api/login", 
                     "/api/register", 
-                    "/api/ping", 
                     "/api/send-email-otp", 
                     "/api/forgot-password", 
                     "/api/reset-password"
                 ).permitAll()
+                .requestMatchers("/api/ping", "/api/ping/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/results").hasRole("ADMIN")
                 .requestMatchers("/api/student/exams/**").hasRole("STUDENT")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
-                .requestMatchers("/api/profile/update-general").authenticated() 
-                .requestMatchers("/api/profile/update-password").authenticated() 
+                .requestMatchers("/api/profile/update-general", "/api/profile/update-password", "/api/profile/toggle-mfa").authenticated() 
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
