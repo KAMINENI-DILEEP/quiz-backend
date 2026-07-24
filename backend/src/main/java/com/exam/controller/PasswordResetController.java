@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/api")
@@ -32,13 +33,18 @@ public class PasswordResetController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email address not found."));
         }
 
-        String otp = "123456"; // Mock or dynamic 6-digit code for reset
+        // Generate a secure 6-digit random code
+        String otp = String.format("%06d", new Random().nextInt(999999));
         user.setResetOtp(otp);
         userRepository.save(user);
 
-        emailService.sendEmail(email, "Password Recovery Code", "Your password reset code is: " + otp);
+        // Dispatch the generated OTP dynamically via EmailService
+        String subject = "Password Recovery Verification Code";
+        String body = "Hello " + user.getName() + ",\n\nYour 6-digit password reset code is: " + otp + "\n\nThis code will allow you to update your credentials securely.";
+        
+        emailService.sendEmail(email, subject, body);
 
-        return ResponseEntity.ok(Map.of("message", "Password reset code sent to your email."));
+        return ResponseEntity.ok(Map.of("message", "Password reset code sent successfully to your email."));
     }
 
     @PostMapping("/reset-password")
@@ -48,14 +54,14 @@ public class PasswordResetController {
         String newPassword = request.get("newPassword");
 
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || !otp.equals(user.getResetOtp())) {
+        if (user == null || user.getResetOtp() == null || !user.getResetOtp().equals(otp)) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid email or verification code."));
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetOtp(null);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setResetOtp(null); // Clear OTP after successful use
         userRepository.save(user);
 
-        return ResponseEntity.ok(Map.of("message", "Password reset successfully. Please sign in."));
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully. Please sign in with your new password."));
     }
 }
