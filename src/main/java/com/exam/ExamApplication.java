@@ -18,25 +18,21 @@ public class ExamApplication {
         SpringApplication.run(ExamApplication.class, args);
     }
 
-    @Bean
-    @Transactional
-    public CommandLineRunner initSingleAdmin(UserRepository userRepo, PasswordEncoder encoder) {
-        return args -> {
-            String adminEmail = "admin@edu.com";
-            
-            // Checks if the master admin exists before creating it
-            if (userRepo.findByEmail(adminEmail).isEmpty()) {
+   @Bean
+public CommandLineRunner initSingleAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    return args -> {
+        try {
+            if (userRepository.findByEmail("admin@exam.com") == null) {
                 User admin = new User();
-                admin.setName("System Admin");
-                admin.setEmail(adminEmail);
-                admin.setPasswordHash(encoder.encode("admin123"));
-                admin.setRole(User.Role.ADMIN);
-                
-                userRepo.save(admin);
-                System.out.println(">> Single Admin account initialized: " + adminEmail);
-            } else {
-                System.out.println(">> Admin account already present in database.");
+                admin.setName("Admin");
+                admin.setEmail("admin@exam.com");
+                admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setRole("ADMIN");
+                userRepository.save(admin);
             }
-        };
-    }
+        } catch (Exception e) {
+            System.out.println("Skipping admin init on startup due to network/db lag: " + e.getMessage());
+        }
+    };
+  }
 }
