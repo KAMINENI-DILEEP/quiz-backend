@@ -17,18 +17,27 @@ public class EmailService {
     }
 
     @Async
-    public void sendOtpEmail(String recipientEmail, String otpCode) {
+    public void sendEmail(String to, String subject, String text) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("dileepkamineni@gmail.com");
-            message.setTo(recipientEmail);
-            message.setSubject("Your Examination Portal Verification Code");
-            message.setText("Your One-Time Password (OTP) for authentication is: " + otpCode + 
-                           "\n\nThis code will expire in 5 minutes. Do not share this code with anyone.");
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(text);
             
             mailSender.send(message);
+            System.out.println("SUCCESS: Email successfully dispatched to " + to);
         } catch (Exception e) {
-            System.err.println("Failed to send OTP email to " + recipientEmail + ": " + e.getMessage());
+            System.err.println("CRITICAL ERROR: Failed to send email to " + to + ": " + e.getMessage());
+            e.printStackTrace();
         }
+    }
+
+    // Optional: Keep your specific method if other parts of your app use it
+    @Async
+    public void sendOtpEmail(String recipientEmail, String otpCode) {
+        sendEmail(recipientEmail, "Your Examination Portal Verification Code", 
+            "Your One-Time Password (OTP) for authentication is: " + otpCode + 
+            "\n\nThis code will expire in 5 minutes. Do not share this code with anyone.");
     }
 }
