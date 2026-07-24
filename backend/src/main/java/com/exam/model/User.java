@@ -34,16 +34,18 @@ public class User {
     private Role role;
 
     @Column(name = "mfa_enabled", nullable = false)
-    private boolean mfaEnabled = false; // Optional 2FA preference
+    private boolean mfaEnabled = false;
+
+    // --- ADDED FIELD FOR PASSWORD RESET OTP ---
+    @Column(name = "reset_otp")
+    private String resetOtp;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Default No-Arg Constructor required by JPA
     public User() {
     }
 
-    // Parameterized Constructor
     public User(String name, String email, String mobileNumber, String passwordHash, Role role, boolean mfaEnabled) {
         this.name = name;
         this.email = email;
@@ -80,10 +82,13 @@ public class User {
     public boolean isMfaEnabled() { return mfaEnabled; }
     public void setMfaEnabled(boolean mfaEnabled) { this.mfaEnabled = mfaEnabled; }
 
+    // --- ADDED GETTERS AND SETTERS FOR OTP ---
+    public String getResetOtp() { return resetOtp; }
+    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    // Equality check based on unique email business key
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
