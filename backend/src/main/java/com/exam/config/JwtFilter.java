@@ -23,6 +23,20 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        
+        String path = request.getRequestURI();
+
+        // Bypass JWT verification completely for public login, register, and OTP routes
+        if (path.startsWith("/api/login") || 
+            path.startsWith("/api/register") || 
+            path.startsWith("/api/send-email-otp") || 
+            path.startsWith("/api/forgot-password") || 
+            path.startsWith("/api/reset-password") || 
+            path.startsWith("/api/ping")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -34,12 +48,11 @@ public class JwtFilter extends OncePerRequestFilter {
                         .parseSignedClaims(token)
                         .getPayload();
 
-                String userId = claims.getSubject(); // Extracted strictly as String
+                String userId = claims.getSubject(); 
                 String role = claims.get("role", String.class); 
                 
                 List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
-                // Context Principal is set as a String to prevent downstream matching exceptions
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, authorities);
                         
