@@ -14,13 +14,14 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins(
+                        .allowedOriginPatterns(
                             "http://127.0.0.1:5500", 
                             "http://localhost:5500",
-                            "https://quizfrontend-it5fd1kej-dileepkamineni-2530s-projects.vercel.app" // Add your Vercel deployment URL here
+                            "http://localhost:5173",
+                            "https://*.vercel.app"
                         )
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
+                        .allowedHeaders("Authorization", "Content-Type", "Cache-Control")
                         .allowCredentials(true);
             }
         };
