@@ -1,43 +1,33 @@
 package com.exam.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.annotation.Async;
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.SendEmailRequest;
+import com.resend.services.emails.model.SendEmailResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${resend.api.key}")
+    private String resendApiKey;
 
-    @Autowired
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
-
-    @Async
-    public void sendEmail(String to, String subject, String text) {
+    public void sendEmail(String to, String subject, String body) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("dileepkamineni@gmail.com");
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
-            
-            mailSender.send(message);
-            System.out.println("SUCCESS: Email successfully dispatched to " + to);
-        } catch (Exception e) {
-            System.err.println("CRITICAL ERROR: Failed to send email to " + to + ": " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+            Resend resend = new Resend(resendApiKey);
 
-    // Optional: Keep your specific method if other parts of your app use it
-    @Async
-    public void sendOtpEmail(String recipientEmail, String otpCode) {
-        sendEmail(recipientEmail, "Your Examination Portal Verification Code", 
-            "Your One-Time Password (OTP) for authentication is: " + otpCode + 
-            "\n\nThis code will expire in 5 minutes. Do not share this code with anyone.");
+            SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
+                    .from("onboarding@resend.dev")
+                    .to(to)
+                    .subject(subject)
+                    .html("<p>" + body.replace("\n", "<br>") + "</p>")
+                    .build();
+
+            SendEmailResponse data = resend.emails().send(sendEmailRequest);
+            System.out.println("Email sent successfully, ID: " + data.getId());
+        } catch (ResendException e) {
+            System.err.println("Failed to send email via Resend SDK: " + e.getMessage());
+        }
     }
 }
