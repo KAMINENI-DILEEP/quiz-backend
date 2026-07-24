@@ -19,10 +19,10 @@ public class CorsConfig {
                         "http://localhost:5500",
                         "http://localhost:5173",
                         "https://*.vercel.app",
-                        "https://*.onrender.com" 
+                        "https://*.onrender.com"
                     )
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
-                    .allowedHeaders("*") 
+                    .allowedHeaders("*")
                     .allowCredentials(true);
             }
         };
