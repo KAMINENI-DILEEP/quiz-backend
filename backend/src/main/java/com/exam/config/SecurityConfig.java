@@ -33,7 +33,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
-                // Explicitly permit POST requests for public authentication and recovery routes
+                // Explicitly permit POST requests for login, signup OTP, and password recovery routes
                 .requestMatchers(HttpMethod.POST, 
                     "/api/login", 
                     "/api/register", 
