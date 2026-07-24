@@ -62,7 +62,7 @@ public class AuthController {
     /**
      * Account Registration requiring Email OTP Verification
      */
-  @PostMapping("/send-email-otp")
+ @PostMapping("/send-email-otp")
 public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) {
     String email = payload.get("email");
     if (email == null || email.trim().isEmpty()) {
@@ -73,9 +73,19 @@ public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) 
 
     // Generate a random 6-digit OTP
     String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
-    otpStorage.put(formattedEmail, otp);
 
-    // Dispatch email using the reliable sendEmail method
+    // Save or update the OTP in the database using your UserRepository
+    User user = userRepository.findByEmail(formattedEmail).orElse(new User());
+    if (user.getEmail() == null) {
+        user.setEmail(formattedEmail);
+        user.setName("Pending User");
+        user.setPasswordHash("TEMP_PLACEHOLDER");
+        user.setRole(User.Role.STUDENT);
+    }
+    user.setResetOtp(otp); // Reuse or map a verification OTP field in your User entity
+    userRepository.save(user);
+
+    // Dispatch email using your reliable sendEmail method
     String subject = "Account Registration Verification Code";
     String body = "Your One-Time Password (OTP) for account registration is: " + otp + "\n\nThis code will expire in 5 minutes.";
     
