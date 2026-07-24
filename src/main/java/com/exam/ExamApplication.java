@@ -8,7 +8,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootApplication
 @EnableAsync
@@ -18,21 +17,22 @@ public class ExamApplication {
         SpringApplication.run(ExamApplication.class, args);
     }
 
-   @Bean
-public CommandLineRunner initSingleAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-    return args -> {
-        try {
-            if (userRepository.findByEmail("admin@exam.com") == null) {
-                User admin = new User();
-                admin.setName("Admin");
-                admin.setEmail("admin@exam.com");
-                admin.setPassword(passwordEncoder.encode("admin123"));
-                admin.setRole("ADMIN");
-                userRepository.save(admin);
+    @Bean
+    public CommandLineRunner initSingleAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        return args -> {
+            try {
+                if (userRepository.findByEmail("admin@exam.com") == null) {
+                    User admin = new User();
+                    admin.setName("Admin");
+                    admin.setEmail("admin@exam.com");
+                    admin.setPasswordHash(passwordEncoder.encode("admin123")); // Correct setter name
+                    admin.setRole(User.Role.ADMIN); // Correct Enum type
+                    admin.setMfaEnabled(false);
+                    userRepository.save(admin);
+                }
+            } catch (Exception e) {
+                System.out.println("Skipping admin init on startup due to network/db lag: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.out.println("Skipping admin init on startup due to network/db lag: " + e.getMessage());
-        }
-    };
-  }
+        };
+    }
 }
