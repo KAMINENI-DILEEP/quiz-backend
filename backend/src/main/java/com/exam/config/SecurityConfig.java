@@ -33,7 +33,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
-                .requestMatchers("/api/login", "/api/register", "/api/ping").permitAll()
+                .requestMatchers(
+                    "/api/login", 
+                    "/api/register", 
+                    "/api/ping", 
+                    "/api/send-email-otp", 
+                    "/api/forgot-password", 
+                    "/api/reset-password"
+                ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/results").hasRole("ADMIN")
                 .requestMatchers("/api/student/exams/**").hasRole("STUDENT")
@@ -70,7 +77,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() { 
-        // Strength set to 4 for sub-10ms hashing execution per authentication request
         return new BCryptPasswordEncoder(4); 
     }
 
