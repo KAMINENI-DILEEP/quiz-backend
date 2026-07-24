@@ -62,32 +62,27 @@ public class AuthController {
     /**
      * Account Registration requiring Email OTP Verification
      */
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email") != null ? payload.get("email").trim().toLowerCase() : null;
-        String name = payload.get("name");
-        String mobile = payload.get("mobileNumber");
-        String password = payload.get("password");
-        String enteredOtp = payload.get("otp");
+  @PostMapping("/send-email-otp")
+public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) {
+    String email = payload.get("email");
+    if (email == null || email.trim().isEmpty()) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Email address is required."));
+    }
 
-        if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email address is required."));
-        }
+    String formattedEmail = email.trim().toLowerCase();
 
-        // 1. Verify Registration Email OTP
-        String validOtp = otpStorage.get(email);
-        if (validOtp == null || (!validOtp.equals(enteredOtp) && !"123456".equals(enteredOtp))) {
-            return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired email verification code."));
-        }
+    // Generate a random 6-digit OTP
+    String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
+    otpStorage.put(formattedEmail, otp);
 
-        // 2. Uniqueness Checks
-        if (userRepository.findByEmail(email).isPresent()) {
-            return ResponseEntity.status(409).body(Map.of("message", "Email address already registered."));
-        }
-        if (mobile != null && !mobile.trim().isEmpty() && userRepository.findByMobileNumber(mobile).isPresent()) {
-            return ResponseEntity.status(409).body(Map.of("message", "Mobile number already linked to an account."));
-        }
+    // Dispatch email using the reliable sendEmail method
+    String subject = "Account Registration Verification Code";
+    String body = "Your One-Time Password (OTP) for account registration is: " + otp + "\n\nThis code will expire in 5 minutes.";
+    
+    emailService.sendEmail(formattedEmail, subject, body);
 
+    return ResponseEntity.ok(Map.of("message", "Verification code dispatched to: " + formattedEmail));
+}
         // 3. Save User Entity
         User newStudent = new User();
         newStudent.setName(name);
