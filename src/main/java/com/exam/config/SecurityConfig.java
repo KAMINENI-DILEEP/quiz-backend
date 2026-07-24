@@ -30,10 +30,16 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+           .authorizeHttpRequests(auth -> auth
     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
     .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
-    .requestMatchers("/ping", "/api/ping", "/api/login", "/api/register", "/api/ping").permitAll() // Added /ping here
+    .requestMatchers(
+        "/ping", 
+        "/api/ping", 
+        "/api/login", 
+        "/api/register", 
+        "/api/send-email-otp"
+    ).permitAll()
     .requestMatchers("/api/admin/**").hasRole("ADMIN")
     .requestMatchers("/api/results").hasRole("ADMIN")
     .requestMatchers("/api/student/exams/**").hasRole("STUDENT")
