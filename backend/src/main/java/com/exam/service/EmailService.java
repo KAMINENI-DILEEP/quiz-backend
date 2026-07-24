@@ -20,7 +20,7 @@ public class EmailService {
     public void sendOtpEmail(String recipientEmail, String otpCode) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("dileepkamineni.com");
+            message.setFrom("dileepkamineni@gmail.com");
             message.setTo(recipientEmail);
             message.setSubject("Your Examination Portal Verification Code");
             message.setText("Your One-Time Password (OTP) for authentication is: " + otpCode + 
