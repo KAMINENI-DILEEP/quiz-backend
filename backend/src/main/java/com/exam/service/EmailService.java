@@ -11,8 +11,8 @@ import java.util.Map;
 @Service
 public class EmailService {
 
-      @Value("${resend.api.key:default_key}")
-      private String resendApiKey;
+     @Value("${resend.api.key:re_L1jPaGUY_LgJju8N8az3eVTnwDBjvXuMq}")
+private String resendApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
