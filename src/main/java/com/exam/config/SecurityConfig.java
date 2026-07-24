@@ -39,6 +39,7 @@ public class SecurityConfig {
         "/api/login", 
         "/api/register", 
         "/api/send-email-otp"
+        "/api/**"
     ).permitAll()
     .requestMatchers("/api/admin/**").hasRole("ADMIN")
     .requestMatchers("/api/results").hasRole("ADMIN")
