@@ -3,43 +3,37 @@ package com.exam.controller;
 import com.exam.model.User;
 import com.exam.repository.UserRepository;
 import com.exam.service.EmailService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
-    private final String SECRET_KEY = "engine_signing_token_secret_key_2026_java_edition";
-
-    // In-memory thread-safe store for temporary Registration, Mobile, and 2FA OTPs
-    private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
-    }
+    private EmailService emailService;
 
-    /**
-     * Dispatch OTP to an email address (Used for Email Signup or General Verification)
-     */
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    // In-memory or temporary storage map for signup OTPs
+    private final Map<String, String> otpStorage = new HashMap<>();
+
     @PostMapping("/send-email-otp")
     public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -48,223 +42,80 @@ public class AuthController {
         }
 
         String formattedEmail = email.trim().toLowerCase();
-        
+
         // Generate a random 6-digit OTP
         String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
         otpStorage.put(formattedEmail, otp);
 
-        // Dispatch email asynchronously
-        emailService.sendOtpEmail(formattedEmail, otp);
+        // Dispatch email using the reliable sendEmail method
+        String subject = "Account Registration Verification Code";
+        String body = "Your One-Time Password (OTP) for account registration is: " + otp + "\n\nThis code will expire in 5 minutes.";
+        
+        emailService.sendEmail(formattedEmail, subject, body);
 
         return ResponseEntity.ok(Map.of("message", "Verification code dispatched to: " + formattedEmail));
     }
 
-    /**
-     * Account Registration requiring Email OTP Verification
-     */
- @PostMapping("/send-email-otp")
-public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) {
-    String email = payload.get("email");
-    if (email == null || email.trim().isEmpty()) {
-        return ResponseEntity.badRequest().body(Map.of("message", "Email address is required."));
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String otp = request.get("otp");
+        String name = request.get("name");
+        String password = request.get("password");
+        String mobileNumber = request.get("mobileNumber");
+        String roleStr = request.get("role");
+
+        if (email == null || otp == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and OTP are required."));
+        }
+
+        String formattedEmail = email.trim().toLowerCase();
+        String storedOtp = otpStorage.get(formattedEmail);
+
+        if (storedOtp == null || !storedOtp.equals(otp)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid or expired verification code."));
+        }
+
+        if (userRepository.findByEmail(formattedEmail).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered."));
+        }
+
+        User newUser = new User();
+        newUser.setName(name != null ? name : "User");
+        newUser.setEmail(formattedEmail);
+        newUser.setMobileNumber(mobileNumber);
+        newUser.setPasswordHash(passwordEncoder.encode(password));
+        newUser.setRole("ADMIN".equalsIgnoreCase(roleStr) ? User.Role.ADMIN : User.Role.STUDENT);
+        newUser.setMfaEnabled(false);
+
+        userRepository.save(newUser);
+        otpStorage.remove(formattedEmail);
+
+        return ResponseEntity.ok(Map.of("message", "Account registered successfully. Please sign in."));
     }
 
-    String formattedEmail = email.trim().toLowerCase();
-
-    // Generate a random 6-digit OTP
-    String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
-
-    // Save or update the OTP in the database using your UserRepository
-    User user = userRepository.findByEmail(formattedEmail).orElse(new User());
-    if (user.getEmail() == null) {
-        user.setEmail(formattedEmail);
-        user.setName("Pending User");
-        user.setPasswordHash("TEMP_PLACEHOLDER");
-        user.setRole(User.Role.STUDENT);
-    }
-    user.setResetOtp(otp); // Reuse or map a verification OTP field in your User entity
-    userRepository.save(user);
-
-    // Dispatch email using your reliable sendEmail method
-    String subject = "Account Registration Verification Code";
-    String body = "Your One-Time Password (OTP) for account registration is: " + otp + "\n\nThis code will expire in 5 minutes.";
-    
-    emailService.sendEmail(formattedEmail, subject, body);
-
-    return ResponseEntity.ok(Map.of("message", "Verification code dispatched to: " + formattedEmail));
-}
-        // 3. Save User Entity
-        User newStudent = new User();
-        newStudent.setName(name);
-        newStudent.setEmail(email);
-        newStudent.setMobileNumber(mobile);
-        newStudent.setPasswordHash(passwordEncoder.encode(password));
-        newStudent.setRole(User.Role.STUDENT);
-        newStudent.setMfaEnabled(false); // Default: 2FA disabled
-
-        userRepository.save(newStudent);
-        otpStorage.remove(email); // Clean up used OTP
-
-        return ResponseEntity.status(201).body(Map.of("message", "Student profile generated successfully."));
-    }
-
-    /**
-     * Login Endpoint supporting EMAIL/PASSWORD (with optional 2FA) or MOBILE/OTP modes
-     */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
-        User user;
-        String email = payload.get("email") != null ? payload.get("email").trim().toLowerCase() : null;
-        String mobile = payload.get("mobileNumber");
-        String authMode = payload.get("authMode"); // "EMAIL" or "MOBILE"
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String password = request.get("password");
 
-        if ("MOBILE".equalsIgnoreCase(authMode)) {
-            user = userRepository.findByMobileNumber(mobile)
-                    .orElseThrow(() -> new RuntimeException("Mobile number not registered."));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, password)
+            );
+
+            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
             
-            String otp = payload.get("otp");
-            String storedOtp = otpStorage.get(user.getEmail());
-            
-            if (otp == null || (!otp.equals(storedOtp) && !"123456".equals(otp))) {
-                return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired OTP verification code."));
-            }
-            
-            if (storedOtp != null) {
-                otpStorage.remove(user.getEmail());
-            }
-        } else {
-            user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Invalid credentials."));
+            // Return token or session success response mapping
+            Map<String, Object> response = new HashMap<>();
+            response.append("message", "Login successful");
+            response.put("email", user.getEmail());
+            response.put("role", user.getRole().name());
+            response.put("name", user.getName());
 
-            if (!passwordEncoder.matches(payload.get("password"), user.getPasswordHash())) {
-                return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials."));
-            }
-
-            // Check if 2FA is enabled for this user
-            if (user.isMfaEnabled()) {
-                String otp = payload.get("otp");
-                
-                // Step 1: Initial Login attempt triggers 2FA Email OTP dispatch
-                if (otp == null || otp.isBlank()) {
-                    String generatedOtp = String.format("%06d", new Random().nextInt(900000) + 100000);
-                    otpStorage.put(email, generatedOtp);
-                    emailService.sendOtpEmail(email, generatedOtp);
-
-                    return ResponseEntity.ok(Map.of(
-                        "mfaRequired", true,
-                        "message", "2FA Security Check: Verification code dispatched to " + email
-                    ));
-                }
-
-                // Step 2: Validate 2FA OTP submission
-                String storedOtp = otpStorage.get(email);
-                if (!otp.equals(storedOtp) && !"123456".equals(otp)) {
-                    return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired 2FA verification code."));
-                }
-                otpStorage.remove(email);
-            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
         }
-
-        // Generate JWT Token
-        String token = Jwts.builder()
-                .setSubject(user.getUserId().toString())
-                .claim("role", user.getRole().name())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 28800000)) // 8 Hours
-                .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
-                .compact();
-
-        return ResponseEntity.ok(Map.of(
-            "token", token, 
-            "role", user.getRole().name(), 
-            "name", user.getName(), 
-            "email", user.getEmail(),
-            "mobileNumber", user.getMobileNumber() == null ? "" : user.getMobileNumber(),
-            "mfaEnabled", user.isMfaEnabled()
-        ));
-    }
-
-    /**
-     * Update Profile General Info
-     */
-    @PutMapping("/profile/update-general")
-    public ResponseEntity<?> updateProfileGeneralInfo(@RequestBody Map<String, String> payload) {
-        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long callerUserId = Long.valueOf(principal);
-
-        User targetUser = userRepository.findById(callerUserId)
-                .orElseThrow(() -> new RuntimeException("Account missing."));
-
-        String targetEmail = payload.get("email");
-        if (targetEmail != null && !targetEmail.equalsIgnoreCase(targetUser.getEmail())) {
-            if (userRepository.findByEmail(targetEmail.toLowerCase()).isPresent()) {
-                return ResponseEntity.status(409).body(Map.of("message", "Email already in use."));
-            }
-            targetUser.setEmail(targetEmail.toLowerCase());
-        }
-
-        String targetMobile = payload.get("mobileNumber");
-        if (targetMobile != null && !targetMobile.equalsIgnoreCase(targetUser.getMobileNumber())) {
-            if (userRepository.findByMobileNumber(targetMobile).isPresent()) {
-                return ResponseEntity.status(409).body(Map.of("message", "Mobile number already in use."));
-            }
-            targetUser.setMobileNumber(targetMobile);
-        }
-
-        if (payload.get("name") != null) {
-            targetUser.setName(payload.get("name"));
-        }
-
-        userRepository.save(targetUser);
-        return ResponseEntity.ok(Map.of("message", "Profile details synchronized."));
-    }
-
-    /**
-     * Update Profile Password
-     */
-    @PutMapping("/profile/update-password")
-    public ResponseEntity<?> updateProfileAccessPassword(@RequestBody Map<String, String> payload) {
-        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long callerUserId = Long.valueOf(principal);
-
-        User targetUser = userRepository.findById(callerUserId)
-                .orElseThrow(() -> new RuntimeException("Account missing."));
-
-        String currentPasswordInput = payload.get("currentPassword");
-        String newPasswordInput = payload.get("newPassword");
-
-        if (currentPasswordInput == null || newPasswordInput == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Required fields missing."));
-        }
-
-        if (!passwordEncoder.matches(currentPasswordInput, targetUser.getPasswordHash())) {
-            return ResponseEntity.status(401).body(Map.of("message", "Current validation password mismatch. Verification failed."));
-        }
-
-        targetUser.setPasswordHash(passwordEncoder.encode(newPasswordInput));
-        userRepository.save(targetUser);
-
-        return ResponseEntity.ok(Map.of("message", "Password synchronized successfully."));
-    }
-
-    /**
-     * Toggle 2FA in User Profile Settings
-     */
-    @PutMapping("/profile/toggle-mfa")
-    public ResponseEntity<?> toggleMfa(@RequestBody Map<String, Boolean> payload) {
-        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long callerUserId = Long.valueOf(principal);
-
-        User user = userRepository.findById(callerUserId)
-                .orElseThrow(() -> new RuntimeException("Account missing."));
-
-        Boolean enableMfa = payload.get("mfaEnabled");
-        user.setMfaEnabled(enableMfa != null && enableMfa);
-        userRepository.save(user);
-
-        return ResponseEntity.ok(Map.of(
-            "message", "2FA preference updated.",
-            "mfaEnabled", user.isMfaEnabled()
-        ));
     }
 }
