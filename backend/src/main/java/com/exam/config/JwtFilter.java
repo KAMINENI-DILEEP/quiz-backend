@@ -1,38 +1,40 @@
 package com.exam.config;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.ArrayList;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
     private final String SECRET_KEY = "engine_signing_token_secret_key_2026_java_edition";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         String path = request.getRequestURI();
 
-        // Bypass JWT verification completely for public login, register, and OTP routes
-        if (path.startsWith("/api/login") || 
-            path.startsWith("/api/register") || 
-            path.startsWith("/api/send-email-otp") || 
-            path.startsWith("/api/forgot-password") || 
-            path.startsWith("/api/reset-password") || 
-            path.startsWith("/api/ping")) {
+        // Completely bypass JWT filter for public authentication, health check, and recovery endpoints
+        if (path.contains("/api/login") || 
+            path.contains("/api/register") || 
+            path.contains("/api/send-email-otp") || 
+            path.contains("/api/forgot-password") || 
+            path.contains("/api/reset-password") || 
+            path.contains("/api/ping")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -42,25 +44,27 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             try {
-                Claims claims = Jwts.parser()
-                        .verifyWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
+                Claims claims = Jwts.parserBuilder()
+                        .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
                         .build()
-                        .parseSignedClaims(token)
-                        .getPayload();
+                        .parseClaimsJws(token)
+                        .getBody();
 
-                String userId = claims.getSubject(); 
-                String role = claims.get("role", String.class); 
-                
-                List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userId, null, authorities);
-                        
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                String username = claims.getSubject();
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            username, null, new ArrayList<>()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             } catch (Exception e) {
-                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid or expired JWT token.");
+                return;
             }
         }
+
         filterChain.doFilter(request, response);
     }
 }
