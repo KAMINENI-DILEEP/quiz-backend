@@ -34,13 +34,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
                 // Explicitly permit POST requests for login, signup OTP, and password recovery routes
-                .requestMatchers(HttpMethod.POST, 
-                    "/api/login", 
-                    "/api/register", 
-                    "/api/send-email-otp", 
-                    "/api/forgot-password", 
-                    "/api/reset-password"
-                ).permitAll()
+               .requestMatchers(
+    "/api/login",
+    "/api/login/**",
+    "/api/register",
+    "/api/register/**",
+    "/api/send-email-otp",
+    "/api/forgot-password",
+    "/api/reset-password",
+    "/api/ping",
+    "/api/ping/**"
+).permitAll()
                 .requestMatchers("/api/ping", "/api/ping/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/results").hasRole("ADMIN")
