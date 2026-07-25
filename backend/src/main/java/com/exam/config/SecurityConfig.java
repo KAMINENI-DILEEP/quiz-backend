@@ -1,5 +1,6 @@
 package com.exam.config;
 
+import com.exam.security.JwtFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
