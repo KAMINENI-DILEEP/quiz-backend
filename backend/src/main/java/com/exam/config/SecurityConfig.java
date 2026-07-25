@@ -34,18 +34,17 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtF
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
             
-            // Public endpoints that do not require authentication
-            .requestMatchers(
-                "/api/login",
-                "/api/login/**",
-                "/api/register",
-                "/api/register/**",
-                "/api/send-email-otp",
-                "/api/forgot-password",
-                "/api/reset-password",
-                "/api/ping",
-                "/api/ping/**"
-            ).permitAll()
+.requestMatchers(
+    "/api/login",
+    "/api/login/**",
+    "/api/register",
+    "/api/register/**",
+    "/api/send-email-otp",
+    "/api/forgot-password",
+    "/api/reset-password",
+    "/api/ping",
+    "/api/ping/**"
+).permitAll()
             
             // Role-protected endpoints
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
