@@ -1,8 +1,6 @@
 package com.exam.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import java.util.Random;
 
@@ -10,7 +8,7 @@ import java.util.Random;
 public class MfaService {
 
     @Autowired
-    private JavaMailSender mailSender;
+    private EmailService emailService;
 
     // Generate a 6-digit OTP code
     public String generateOtp() {
@@ -19,12 +17,11 @@ public class MfaService {
         return String.valueOf(otp);
     }
 
-    // Send the OTP via email
+    // Send the OTP via email using Resend EmailService
     public void sendOtpEmail(String toEmail, String otpCode) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(toEmail);
-        message.setSubject("Your Examination Portal MFA Verification Code");
-        message.setText("Your security verification code is: " + otpCode + "\nThis code will expire shortly.");
-        mailSender.send(message);
+        String subject = "Your Examination Portal MFA Verification Code";
+        String body = "Your security verification code is: " + otpCode + "\nThis code will expire shortly.";
+        
+        emailService.sendEmail(toEmail, subject, body);
     }
 }
