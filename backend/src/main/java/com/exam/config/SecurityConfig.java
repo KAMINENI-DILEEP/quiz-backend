@@ -25,38 +25,44 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
-        http
-            .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
-                // Explicitly permit POST requests for login, signup OTP, and password recovery routes
-               .requestMatchers(
-    "/api/login",
-    "/api/login/**",
-    "/api/register",
-    "/api/register/**",
-    "/api/send-email-otp",
-    "/api/forgot-password",
-    "/api/reset-password",
-    "/api/ping",
-    "/api/ping/**"
-).permitAll()
-                .requestMatchers("/api/ping", "/api/ping/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/results").hasRole("ADMIN")
-                .requestMatchers("/api/student/exams/**").hasRole("STUDENT")
-                .requestMatchers("/api/student/**").hasRole("STUDENT")
-                .requestMatchers("/api/profile/update-general", "/api/profile/update-password", "/api/profile/toggle-mfa").authenticated() 
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
+    http
+        .cors(Customizer.withDefaults())
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
+            
+            // Public endpoints that do not require authentication
+            .requestMatchers(
+                "/api/login",
+                "/api/login/**",
+                "/api/register",
+                "/api/register/**",
+                "/api/send-email-otp",
+                "/api/forgot-password",
+                "/api/reset-password",
+                "/api/ping",
+                "/api/ping/**"
+            ).permitAll()
+            
+            // Role-protected endpoints
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/results").hasRole("ADMIN")
+            .requestMatchers("/api/student/exams/**").hasRole("STUDENT")
+            .requestMatchers("/api/student/**").hasRole("STUDENT")
+            
+            // Authenticated profile management endpoints
+            .requestMatchers("/api/profile/update-general", "/api/profile/update-password", "/api/profile/toggle-mfa").authenticated()
+            
+            // Catch-all rule for any other requests
+            .anyRequest().authenticated()
+        )
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+    return http.build();
+}
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
