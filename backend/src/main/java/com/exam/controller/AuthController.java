@@ -89,10 +89,7 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of("message", "Account registered successfully. Please sign in."));
     }
-    @GetMapping("/ping")
-public ResponseEntity<String> pingServer() {
-    return ResponseEntity.ok("Backend is active and running!");
-}
+  
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
