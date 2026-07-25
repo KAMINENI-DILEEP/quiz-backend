@@ -9,24 +9,28 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final String API_URL = "https://api.brevo.com/v3/smtp/email";
+    private final String API_KEY = "your-brevo-api-key"; // Get a free key from brevo.com
 
-    @Value("${spring.mail.username}")
-    private String fromEmail;
-
-    public void sendEmail(String to, String subject, String body) {
+    public void sendEmail(String toEmail, String subject, String body) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
+            RestTemplate restTemplate = new RestTemplate();
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", API_KEY);
 
-            mailSender.send(message);
-            System.out.println("Verification code dispatched to: " + to);
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("sender", new HashMap<>(Map.of("name", "Exam Portal", "email", "your-verified-email@domain.com")));
+            requestBody.put("to", List.of(new HashMap<>(Map.of("email", toEmail))));
+            requestBody.put("subject", subject);
+            requestBody.put("textContent", body);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            restTemplate.postForEntity(API_URL, entity, String.class);
+            
         } catch (Exception e) {
-            System.err.println("Exception while sending email via Gmail SMTP: " + e.getMessage());
+            throw new RuntimeException("Failed to send email via HTTP API: " + e.getMessage());
         }
     }
 }
