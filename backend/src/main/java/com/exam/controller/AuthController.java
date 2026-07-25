@@ -37,11 +37,20 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
+        if (user.getEmail() == null || user.getPasswordHash() == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and password are required"));
+        }
+
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email is already in use"));
         }
 
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        
+        if (user.getRole() == null) {
+            user.setRole(User.Role.STUDENT);
+        }
+
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
@@ -82,7 +91,7 @@ public class AuthController {
         }
 
         return userRepository.findByEmail(email)
-                .map(user -> ResponseEntity.ok(Map.of("message", "Password recovery link/instructions checked")))
+                .map(user -> ResponseEntity.ok(Map.of("message", "Password recovery checked")))
                 .orElse(ResponseEntity.status(404).body(Map.of("message", "User not found")));
     }
 
