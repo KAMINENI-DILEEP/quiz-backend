@@ -2,7 +2,7 @@ package com.exam.controller;
 
 import com.exam.model.User;
 import com.exam.repository.UserRepository;
-import com.exam.service.EmailService;
+import com.exam.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,86 +13,42 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 @RestController
 @RequestMapping("/api")
 public class AuthController {
 
     @Autowired
-    private UserRepository userRepository;
+    private AuthenticationManager authenticationManager;
 
     @Autowired
-    private EmailService emailService;
+    private UserRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private JwtUtil jwtUtil;
 
-    private final Map<String, String> otpStorage = new HashMap<>();
-
-    @PostMapping("/send-email-otp")
-    public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        if (email == null || email.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email address is required."));
-        }
-
-        String formattedEmail = email.trim().toLowerCase();
-        String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
-        otpStorage.put(formattedEmail, otp);
-
-        String subject = "Account Registration Verification Code";
-        String body = "Your One-Time Password (OTP) for account registration is: " + otp + "\n\nThis code will expire in 5 minutes.";
-        
-        emailService.sendEmail(formattedEmail, subject, body);
-
-        return ResponseEntity.ok(Map.of("message", "Verification code dispatched to: " + formattedEmail));
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("pong");
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String otp = request.get("otp");
-        String name = request.get("name");
-        String password = request.get("password");
-        String mobileNumber = request.get("mobileNumber");
-        String roleStr = request.get("role");
-
-        if (email == null || otp == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email and OTP are required."));
+    public ResponseEntity<?> register(@RequestBody User user) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is already in use"));
         }
 
-        String formattedEmail = email.trim().toLowerCase();
-        String storedOtp = otpStorage.get(formattedEmail);
+        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        userRepository.save(user);
 
-        if (storedOtp == null || !storedOtp.equals(otp)) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Invalid or expired verification code."));
-        }
-
-        if (userRepository.findByEmail(formattedEmail).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email is already registered."));
-        }
-
-        User newUser = new User();
-        newUser.setName(name != null ? name : "User");
-        newUser.setEmail(formattedEmail);
-        newUser.setMobileNumber(mobileNumber);
-        newUser.setPasswordHash(passwordEncoder.encode(password));
-        newUser.setRole("ADMIN".equalsIgnoreCase(roleStr) ? User.Role.ADMIN : User.Role.STUDENT);
-        newUser.setMfaEnabled(false);
-
-        userRepository.save(newUser);
-        otpStorage.remove(formattedEmail);
-
-        return ResponseEntity.ok(Map.of("message", "Account registered successfully. Please sign in."));
+        return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
-  
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         String password = request.get("password");
 
@@ -101,17 +57,48 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(email, password)
             );
 
-            User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
-            
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Login successful");
-            response.put("email", user.getEmail());
+            response.put("token", token);
             response.put("role", user.getRole().name());
-            response.put("name", user.getName());
+            response.put("email", user.getEmail());
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
+            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
         }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
+        }
+
+        return userRepository.findByEmail(email)
+                .map(user -> ResponseEntity.ok(Map.of("message", "Password recovery link/instructions checked")))
+                .orElse(ResponseEntity.status(404).body(Map.of("message", "User not found")));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String newPassword = request.get("newPassword");
+
+        if (email == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and new password are required"));
+        }
+
+        return userRepository.findByEmail(email).map(user -> {
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
+        }).orElse(ResponseEntity.status(404).body(Map.of("message", "User not found")));
     }
 }
