@@ -30,30 +30,13 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtF
         .csrf(csrf -> csrf.disable())
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-            .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
-            .requestMatchers(
-                "/api/login",
-                "/api/login/**",
-                "/api/register",
-                "/api/register/**",
-                "/api/send-email-otp",
-                "/api/forgot-password",
-                "/api/reset-password",
-                "/api/ping",
-                "/api/ping/**"
-            ).permitAll()
-            .requestMatchers("/api/admin/**").hasRole("ADMIN")
-            .requestMatchers("/api/results").hasRole("ADMIN")
-            .requestMatchers("/api/student/exams/**").hasRole("STUDENT")
-            .requestMatchers("/api/student/**").hasRole("STUDENT")
+            .requestMatchers("/api/**").permitAll() 
             .anyRequest().authenticated()
         )
         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
 }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
