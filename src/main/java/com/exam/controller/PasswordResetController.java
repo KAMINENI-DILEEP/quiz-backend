@@ -32,7 +32,7 @@ public class PasswordResetController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email address not found."));
         }
 
-        String otp = "123456"; // Mock or dynamic 6-digit OTP code
+        String otp = "123456";
         user.setResetOtp(otp);
         userRepository.save(user);
 
@@ -52,7 +52,7 @@ public class PasswordResetController {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid email or verification code."));
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setResetOtp(null);
         userRepository.save(user);
 
