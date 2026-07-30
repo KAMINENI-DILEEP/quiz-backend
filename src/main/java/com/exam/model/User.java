@@ -28,9 +28,6 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Column(name = "mfa_enabled")
-    private boolean mfaEnabled = false;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -55,9 +52,6 @@ public class User {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
-
-    public boolean isMfaEnabled() { return mfaEnabled; }
-    public void setMfaEnabled(boolean mfaEnabled) { this.mfaEnabled = mfaEnabled; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
