@@ -55,7 +55,7 @@ public class User {
 
     public String getMobileNumber() { return mobileNumber; }
     public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
-
+    
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 
