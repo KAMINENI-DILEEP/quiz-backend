@@ -26,6 +26,7 @@ public class PasswordResetController {
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email") != null ? payload.get("email").trim().toLowerCase() : null;
+        String currentPassword = payload.get("currentPassword");
         String newPassword = payload.get("newPassword");
 
         if (email == null || email.isEmpty() || newPassword == null || newPassword.isEmpty()) {
@@ -35,6 +36,12 @@ public class PasswordResetController {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
             return ResponseEntity.status(404).body(Map.of("message", "User not found with this email address."));
+        }
+
+        if (currentPassword != null && !currentPassword.isEmpty()) {
+            if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                return ResponseEntity.status(401).body(Map.of("message", "Current password does not match."));
+            }
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
