@@ -31,9 +31,6 @@ public class User {
     @Column(name = "mfa_enabled")
     private boolean mfaEnabled = false;
 
-    @Column(name = "reset_otp")
-    private String resetOtp;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -41,7 +38,6 @@ public class User {
         STUDENT, ADMIN
     }
 
-    // Getters and Setters
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
 
@@ -62,9 +58,6 @@ public class User {
 
     public boolean isMfaEnabled() { return mfaEnabled; }
     public void setMfaEnabled(boolean mfaEnabled) { this.mfaEnabled = mfaEnabled; }
-
-    public String getResetOtp() { return resetOtp; }
-    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
