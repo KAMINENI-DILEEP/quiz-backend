@@ -10,7 +10,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long id;
+    private Long userId;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -38,11 +38,8 @@ public class User {
         STUDENT, ADMIN
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public Long getUserId() { return id; }
-    public void setUserId(Long userId) { this.id = userId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -55,7 +52,7 @@ public class User {
 
     public String getMobileNumber() { return mobileNumber; }
     public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
-    
+
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 
