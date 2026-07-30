@@ -10,7 +10,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long userId;
+    private Long id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -28,6 +28,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "reset_otp")
+    private String resetOtp;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -35,8 +38,11 @@ public class User {
         STUDENT, ADMIN
     }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Long getUserId() { return id; }
+    public void setUserId(Long userId) { this.id = userId; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -52,6 +58,9 @@ public class User {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    public String getResetOtp() { return resetOtp; }
+    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
