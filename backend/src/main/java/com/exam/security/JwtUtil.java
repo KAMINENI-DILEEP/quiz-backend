@@ -2,6 +2,7 @@ package com.exam.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,16 @@ public class JwtUtil {
 
     private final String SECRET_KEY_STRING = "engine_signing_token_secret_key_2026_java_edition";
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes(StandardCharsets.UTF_8));
+
+    public String generateToken(String subject, String role) {
+        return Jwts.builder()
+                .setSubject(subject)
+                .claim("role", role)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 28800000)) // 8 Hours
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -30,9 +41,8 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
+        return Jwts.parser()
                 .setSigningKey(key)
-                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
