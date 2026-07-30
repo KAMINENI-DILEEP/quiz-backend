@@ -27,7 +27,6 @@ public class AuthController {
     private final EmailService emailService;
     private final String SECRET_KEY = "engine_signing_token_secret_key_2026_java_edition";
 
-    // In-memory thread-safe store for temporary Registration, Mobile, and 2FA OTPs
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
 
     @Autowired
@@ -37,9 +36,6 @@ public class AuthController {
         this.emailService = emailService;
     }
 
-    /**
-     * Dispatch OTP to an email address (Used for Email Signup or General Verification)
-     */
     @PostMapping("/send-email-otp")
     public ResponseEntity<?> sendEmailOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -49,19 +45,14 @@ public class AuthController {
 
         String formattedEmail = email.trim().toLowerCase();
         
-        // Generate a random 6-digit OTP
         String otp = String.format("%06d", new Random().nextInt(900000) + 100000);
         otpStorage.put(formattedEmail, otp);
 
-        // Dispatch email asynchronously
         emailService.sendOtpEmail(formattedEmail, otp);
 
         return ResponseEntity.ok(Map.of("message", "Verification code dispatched to: " + formattedEmail));
     }
 
-    /**
-     * Account Registration requiring Email OTP Verification
-     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
         String email = payload.get("email") != null ? payload.get("email").trim().toLowerCase() : null;
@@ -74,13 +65,11 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email address is required."));
         }
 
-        // 1. Verify Registration Email OTP
         String validOtp = otpStorage.get(email);
         if (validOtp == null || (!validOtp.equals(enteredOtp) && !"123456".equals(enteredOtp))) {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired email verification code."));
         }
 
-        // 2. Uniqueness Checks
         if (userRepository.findByEmail(email).isPresent()) {
             return ResponseEntity.status(409).body(Map.of("message", "Email address already registered."));
         }
@@ -88,30 +77,26 @@ public class AuthController {
             return ResponseEntity.status(409).body(Map.of("message", "Mobile number already linked to an account."));
         }
 
-        // 3. Save User Entity
         User newStudent = new User();
         newStudent.setName(name);
         newStudent.setEmail(email);
         newStudent.setMobileNumber(mobile);
         newStudent.setPasswordHash(passwordEncoder.encode(password));
         newStudent.setRole(User.Role.STUDENT);
-        newStudent.setMfaEnabled(false); // Default: 2FA disabled
+        newStudent.setMfaEnabled(false);
 
         userRepository.save(newStudent);
-        otpStorage.remove(email); // Clean up used OTP
+        otpStorage.remove(email);
 
         return ResponseEntity.status(201).body(Map.of("message", "Student profile generated successfully."));
     }
 
-    /**
-     * Login Endpoint supporting EMAIL/PASSWORD (with optional 2FA) or MOBILE/OTP modes
-     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
         User user;
         String email = payload.get("email") != null ? payload.get("email").trim().toLowerCase() : null;
         String mobile = payload.get("mobileNumber");
-        String authMode = payload.get("authMode"); // "EMAIL" or "MOBILE"
+        String authMode = payload.get("authMode");
 
         if ("MOBILE".equalsIgnoreCase(authMode)) {
             user = userRepository.findByMobileNumber(mobile)
@@ -135,11 +120,9 @@ public class AuthController {
                 return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials."));
             }
 
-            // Check if 2FA is enabled for this user
             if (user.isMfaEnabled()) {
                 String otp = payload.get("otp");
                 
-                // Step 1: Initial Login attempt triggers 2FA Email OTP dispatch
                 if (otp == null || otp.isBlank()) {
                     String generatedOtp = String.format("%06d", new Random().nextInt(900000) + 100000);
                     otpStorage.put(email, generatedOtp);
@@ -151,7 +134,6 @@ public class AuthController {
                     ));
                 }
 
-                // Step 2: Validate 2FA OTP submission
                 String storedOtp = otpStorage.get(email);
                 if (!otp.equals(storedOtp) && !"123456".equals(otp)) {
                     return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired 2FA verification code."));
@@ -160,12 +142,11 @@ public class AuthController {
             }
         }
 
-        // Generate JWT Token
         String token = Jwts.builder()
                 .setSubject(user.getUserId().toString())
                 .claim("role", user.getRole().name())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 28800000)) // 8 Hours
+                .setExpiration(new Date(System.currentTimeMillis() + 28800000))
                 .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
                 .compact();
 
@@ -179,9 +160,6 @@ public class AuthController {
         ));
     }
 
-    /**
-     * Update Profile General Info
-     */
     @PutMapping("/profile/update-general")
     public ResponseEntity<?> updateProfileGeneralInfo(@RequestBody Map<String, String> payload) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -214,9 +192,6 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Profile details synchronized."));
     }
 
-    /**
-     * Update Profile Password
-     */
     @PutMapping("/profile/update-password")
     public ResponseEntity<?> updateProfileAccessPassword(@RequestBody Map<String, String> payload) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -242,9 +217,6 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password synchronized successfully."));
     }
 
-    /**
-     * Toggle 2FA in User Profile Settings
-     */
     @PutMapping("/profile/toggle-mfa")
     public ResponseEntity<?> toggleMfa(@RequestBody Map<String, Boolean> payload) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
