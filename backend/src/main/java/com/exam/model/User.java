@@ -24,12 +24,12 @@ public class User {
     @Column(name = "mobile_number")
     private String mobileNumber;
 
+    @Column(name = "gender")
+    private String gender; // "Male", "Female", "Other"
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
-
-    @Column(name = "reset_otp")
-    private String resetOtp;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -53,11 +53,11 @@ public class User {
     public String getMobileNumber() { return mobileNumber; }
     public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
 
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
-
-    public String getResetOtp() { return resetOtp; }
-    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
