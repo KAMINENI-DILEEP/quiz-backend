@@ -2,45 +2,149 @@ package com.exam.controller;
 
 import com.exam.model.User;
 import com.exam.repository.UserRepository;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
-    private final UserRepository users;
-    private final PasswordEncoder encoder;
 
-    public ProfileController(UserRepository users, PasswordEncoder encoder) {
-        this.users = users;
-        this.encoder = encoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public ProfileController(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @PutMapping("/update-general")
-    public ResponseEntity<?> updateGeneral(Authentication auth, @RequestBody Map<String,String> body) {
-        User user = users.findByEmail(auth.getName()).orElseThrow();
-        String name = body.get("name");
-        String email = body.get("email");
-        if (name != null && !name.isBlank()) user.setName(name.trim());
-        if (email != null && !email.isBlank()) user.setEmail(email.trim());
-        users.save(user);
-        return ResponseEntity.ok(Map.of("message","Profile updated successfully"));
-    }
+    // =====================================================
+    // CHANGE PASSWORD AFTER LOGIN
+    // Works for both STUDENT and ADMIN
+    // =====================================================
 
     @PutMapping("/update-password")
-    public ResponseEntity<?> updatePassword(Authentication auth, @RequestBody Map<String,String> body) {
-        User user = users.findByEmail(auth.getName()).orElseThrow();
-        String current = body.get("currentPassword");
-        String next = body.get("newPassword");
-        if (current == null || next == null || next.length() < 6)
-            return ResponseEntity.badRequest().body(Map.of("message","Current password and a new password of at least 6 characters are required."));
-        if (!encoder.matches(current, user.getPasswordHash()))
-            return ResponseEntity.status(400).body(Map.of("message","Current password is incorrect."));
-        user.setPasswordHash(encoder.encode(next));
-        users.save(user);
-        return ResponseEntity.ok(Map.of("message","Password changed successfully"));
+    public ResponseEntity<?> updatePassword(
+            Authentication authentication,
+            @RequestBody Map<String, String> request
+    ) {
+
+        if (authentication == null ||
+                authentication.getName() == null) {
+
+            return ResponseEntity
+                    .status(401)
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "You are not authenticated."
+                            )
+                    );
+        }
+
+        String currentPassword =
+                request.get("currentPassword");
+
+        String newPassword =
+                request.get("newPassword");
+
+        if (currentPassword == null ||
+                currentPassword.isBlank()) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "Current password is required."
+                            )
+                    );
+        }
+
+        if (newPassword == null ||
+                newPassword.length() < 6) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "New password must contain at least 6 characters."
+                            )
+                    );
+        }
+
+        String email =
+                authentication.getName();
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElse(null);
+
+        if (user == null) {
+
+            return ResponseEntity
+                    .status(404)
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "User account not found."
+                            )
+                    );
+        }
+
+        if (!passwordEncoder.matches(
+                currentPassword,
+                user.getPasswordHash()
+        )) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "Current password is incorrect."
+                            )
+                    );
+        }
+
+        // Prevent setting the same password again
+        if (passwordEncoder.matches(
+                newPassword,
+                user.getPasswordHash()
+        )) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "New password must be different from your current password."
+                            )
+                    );
+        }
+
+        user.setPasswordHash(
+                passwordEncoder.encode(
+                        newPassword
+                )
+        );
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "message",
+                        "Password changed successfully."
+                )
+        );
     }
 }
