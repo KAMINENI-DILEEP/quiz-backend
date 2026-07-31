@@ -9,7 +9,8 @@ import java.util.Objects;
 public class User {
 
     public enum Role {
-        STUDENT, ADMIN
+        STUDENT,
+        ADMIN
     }
 
     @Id
@@ -34,17 +35,30 @@ public class User {
     private Role role;
 
     @Column(name = "mfa_enabled", nullable = false)
-    private boolean mfaEnabled = false; // Optional 2FA preference
+    private boolean mfaEnabled = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Default No-Arg Constructor required by JPA
+    // Password reset OTP
+    @Column(name = "reset_otp")
+    private String resetOtp;
+
+    // OTP expiration time
+    @Column(name = "reset_otp_expiry")
+    private LocalDateTime resetOtpExpiry;
+
     public User() {
     }
 
-    // Parameterized Constructor
-    public User(String name, String email, String mobileNumber, String passwordHash, Role role, boolean mfaEnabled) {
+    public User(
+            String name,
+            String email,
+            String mobileNumber,
+            String passwordHash,
+            Role role,
+            boolean mfaEnabled
+    ) {
         this.name = name;
         this.email = email;
         this.mobileNumber = mobileNumber;
@@ -58,37 +72,99 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getUserId() {
+        return userId;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getName() {
+        return name;
+    }
 
-    public String getMobileNumber() { return mobileNumber; }
-    public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getEmail() {
+        return email;
+    }
 
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public boolean isMfaEnabled() { return mfaEnabled; }
-    public void setMfaEnabled(boolean mfaEnabled) { this.mfaEnabled = mfaEnabled; }
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
+    }
 
-    // Equality check based on unique email business key
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getResetOtp() {
+        return resetOtp;
+    }
+
+    public void setResetOtp(String resetOtp) {
+        this.resetOtp = resetOtp;
+    }
+
+    public LocalDateTime getResetOtpExpiry() {
+        return resetOtpExpiry;
+    }
+
+    public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) {
+        this.resetOtpExpiry = resetOtpExpiry;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         User user = (User) o;
+
         return Objects.equals(email, user.email);
     }
 
