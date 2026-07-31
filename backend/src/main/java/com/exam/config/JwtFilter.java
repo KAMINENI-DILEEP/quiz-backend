@@ -15,10 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-public String extractRole(String token) {
-    Claims claims = extractAllClaims(token);
-    return claims.get("role", String.class);
-}
+
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -39,17 +36,16 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
-              
+                // Token parsing or expiration failure
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, username)) {
                 
-    
                 String role = jwtUtil.extractRole(jwt);
                 if (role == null) {
-                    role = "STUDENT"; 
+                    role = "STUDENT";
                 } else {
                     role = role.toUpperCase();
                 }
