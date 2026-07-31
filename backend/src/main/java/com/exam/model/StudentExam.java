@@ -19,9 +19,9 @@ public class StudentExam {
     private ExamStatus status = ExamStatus.ASSIGNED;
     private LocalDateTime completedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "studentId", referencedColumnName = "id", insertable = false, updatable = false)
-    private User user;
+   @ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "studentId", insertable = false, updatable = false)
+private User user;
 
     public enum ExamStatus { ASSIGNED, STARTED, COMPLETED }
 
