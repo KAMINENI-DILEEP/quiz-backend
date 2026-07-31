@@ -25,7 +25,7 @@ public class User {
     private String mobileNumber;
 
     @Column(name = "gender")
-    private String gender; // "Male", "Female", "Other"
+    private String gender; // Added Gender field
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
