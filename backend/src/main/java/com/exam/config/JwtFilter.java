@@ -15,7 +15,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-
+public String extractRole(String token) {
+    Claims claims = extractAllClaims(token);
+    return claims.get("role", String.class);
+}
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
