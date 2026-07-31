@@ -27,8 +27,6 @@ public class User {
     @Column(name = "display_id", unique = true, length = 16)
     private String displayId;
 
-    @Column(name = "mobile_number", unique = true)
-    private String mobileNumber;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
@@ -37,22 +35,11 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Column(name = "mfa_enabled", nullable = false)
-    private boolean mfaEnabled = false;
-
     @Column(name = "account_enabled", nullable = false)
     private boolean accountEnabled = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    // Password reset OTP
-    @Column(name = "reset_otp")
-    private String resetOtp;
-
-    // OTP expiration time
-    @Column(name = "reset_otp_expiry")
-    private LocalDateTime resetOtpExpiry;
 
     public User() {
     }
