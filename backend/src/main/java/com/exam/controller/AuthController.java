@@ -30,10 +30,6 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @GetMapping("/ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("pong");
-    }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
