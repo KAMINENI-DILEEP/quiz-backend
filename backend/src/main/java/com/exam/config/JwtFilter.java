@@ -1,5 +1,6 @@
 package com.exam.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,7 +44,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, username)) {
                 
-                String role = jwtUtil.extractRole(jwt);
+                // Extract the role directly using standard claim extraction
+                String role = jwtUtil.extractClaim(jwt, claims -> claims.get("role", String.class));
                 if (role == null) {
                     role = "STUDENT";
                 } else {
