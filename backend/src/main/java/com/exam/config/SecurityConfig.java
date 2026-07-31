@@ -32,18 +32,19 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                   .requestMatchers("/api/student/**").hasAuthority("STUDENT") // Use hasAuthority instead of hasRole
-.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                // 1. Public endpoints that anyone can access without authentication
                 .requestMatchers(
                     "/api/login",
                     "/api/register",
                     "/api/forgot-password",
                     "/api/reset-password",
                     "/api/ping"
-                    
                 ).permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/results").hasRole("ADMIN")
+                // 2. Role-specific protected endpoints
+                .requestMatchers("/api/student/**").hasAuthority("STUDENT")
+                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                .requestMatchers("/api/results").hasAuthority("ADMIN")
+                // 3. Any other route requires valid authentication
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
