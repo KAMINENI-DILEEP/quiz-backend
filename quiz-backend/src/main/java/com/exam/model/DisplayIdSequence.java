@@ -8,20 +8,35 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "display_id_sequences")
 public class DisplayIdSequence {
+
     @Id
-    @Column(length = 3)
+    @Column(name = "prefix", length = 3, nullable = false)
     private String prefix;
 
-    @Column(name = "last_value", nullable = false)
+    @Column(name = "sequence_value", nullable = false)
     private Long lastValue = 0L;
 
-    public DisplayIdSequence() {}
+    public DisplayIdSequence() {
+    }
+
     public DisplayIdSequence(String prefix, Long lastValue) {
         this.prefix = prefix;
         this.lastValue = lastValue;
     }
-    public String getPrefix() { return prefix; }
-    public void setPrefix(String prefix) { this.prefix = prefix; }
-    public Long getLastValue() { return lastValue; }
-    public void setLastValue(Long lastValue) { this.lastValue = lastValue; }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
+    }
+
+    public Long getLastValue() {
+        return lastValue;
+    }
+
+    public void setLastValue(Long lastValue) {
+        this.lastValue = lastValue;
+    }
 }
