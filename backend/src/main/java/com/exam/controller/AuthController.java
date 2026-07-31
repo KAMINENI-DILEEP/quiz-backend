@@ -30,7 +30,6 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         if (user.getEmail() == null || user.getPasswordHash() == null) {
@@ -41,6 +40,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email is already in use"));
         }
 
+        // Encode the password before saving
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
         
         if (user.getRole() == null) {
@@ -71,6 +71,7 @@ public class AuthController {
             response.put("token", token);
             response.put("role", user.getRole().name());
             response.put("email", user.getEmail());
+            response.put("name", user.getName() != null ? user.getName() : "User"); // Added name for frontend
 
             return ResponseEntity.ok(response);
 
