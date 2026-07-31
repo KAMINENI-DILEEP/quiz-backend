@@ -32,12 +32,15 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                   .requestMatchers("/api/student/**").hasAuthority("STUDENT") // Use hasAuthority instead of hasRole
+.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers(
                     "/api/login",
                     "/api/register",
                     "/api/forgot-password",
                     "/api/reset-password",
                     "/api/ping"
+                    
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/results").hasRole("ADMIN")
